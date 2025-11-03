@@ -1,18 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Bolangde AI Generator</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      padding: 50px;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Bolangde AI Generator</title>
+<style>
+  body {
+    font-family: "Inter", sans-serif;
+    background: #fafafa;
+    text-align: center;
+    padding: 40px;
+  }
+  h1 {
+    font-size: 26px;
+    margin-bottom: 10px;
+  }
+  .block {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    display: inline-block;
+    padding: 30px 40px;
+    max-width: 600px;
+  }
+  input, select, button {
+    margin: 10px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 15px;
+  }
+  button {
+    background: #000;
+    color: white;
+    cursor: pointer;
+  }
+  img {
+    margin-top: 20px;
+    width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  }
+</style>
 </head>
 <body>
-  <h1>🧺 Bolangde AI Generator</h1>
-  <p>Сайт подключён. Продолжим добавлять генерацию позже 💫</p>
+
+<h1>🧺 Bolangde AI Generator</h1>
+<div class="block">
+  <p>Загрузи фото полотенца и выбери тип сюжета:</p>
+
+  <input type="file" id="imageUpload" accept="image/*"><br>
+  <select id="scene">
+    <option value="minimal">Минималистичный</option>
+    <option value="family">Семейный</option>
+    <option value="couple">Парный</option>
+    <option value="emotional">Эмоциональный</option>
+    <option value="pure">Чистый визуал</option>
+  </select><br>
+
+  <select id="format">
+    <option value="1080x1920">Вертикальный (1080×1920)</option>
+    <option value="1536x1024">Горизонтальный (1536×1024)</option>
+  </select><br>
+
+  <button id="generate">Создать сюжет</button>
+
+  <div id="result"></div>
+</div>
+
+<script>
+document.getElementById("generate").onclick = async () => {
+  const fileInput = document.getElementById("imageUpload");
+  const scene = document.getElementById("scene").value;
+  const format = document.getElementById("format").value;
+  const result = document.getElementById("result");
+
+  if (!fileInput.files[0]) {
+    alert("Пожалуйста, выбери изображение полотенца.");
+    return;
+  }
+
+  result.innerHTML = "<p>⏳ Генерация... подожди немного</p>";
+
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const imageBase64 = reader.result.split(",")[1];
+    const prompt = `A ${scene} commercial photo of towels in ${format} format, product photography, clean background, professional lighting, slight 3% noise, advertising style`;
+
+    const r = await fetch("https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer hf_xxx",  // вставь сюда свой Hugging Face токен
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        inputs: prompt,
+        parameters: {
+          image: imageBase64,
+          num_inference_steps: 25,
+          guidance_scale: 7.5
+        }
+      })
+    });
+
+    if (!r.ok) {
+      const text = await r.text();
+      result.innerHTML = `<p style="color:red;">Ошибка: ${r.status} ${text}</p>`;
+      return;
+    }
+
+    const blob = await r.blob();
+    const imgUrl = URL.createObjectURL(blob);
+    result.innerHTML = `<img src="${imgUrl}" alt="Результат">`;
+  };
+  reader.readAsDataURL(fileInput.files[0]);
+};
+</script>
 </body>
 </html>
